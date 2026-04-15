@@ -1,5 +1,6 @@
 import cv2
 import os
+import sys
 import tempfile
 import re
 import string
@@ -1748,6 +1749,10 @@ def main():
         if queue_size > 0:
             print(f"📋 Pending queue items on startup: {queue_size}")
         print("=" * 60)
+
+        if not TELEGRAM_TOKEN:
+            print("❌ TELEGRAM_BOT_TOKEN is not set. Set the token as an environment variable before starting the bot.")
+            sys.exit(1)
 
         health_thread = threading.Thread(target=_start_health_server, daemon=True)
         health_thread.start()
