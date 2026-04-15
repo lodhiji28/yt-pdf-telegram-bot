@@ -1,0 +1,925 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>YT-PDF Bot · Admin Dashboard</title>
+<style>
+:root{
+  --bg:#0b0f1a;--surface:#111827;--surface2:#1e2a3a;--border:#1f2e42;
+  --text:#e8edf5;--muted:#6b7fa3;--accent:#6366f1;--accent2:#818cf8;
+  --green:#10b981;--red:#ef4444;--yellow:#f59e0b;--blue:#38bdf8;--pink:#f472b6;
+  --grad1:linear-gradient(135deg,#6366f1,#8b5cf6);
+  --grad2:linear-gradient(135deg,#10b981,#38bdf8);
+  --grad3:linear-gradient(135deg,#f59e0b,#f472b6);
+  --grad4:linear-gradient(135deg,#ef4444,#f97316);
+  --grad5:linear-gradient(135deg,#38bdf8,#6366f1);
+  --grad6:linear-gradient(135deg,#8b5cf6,#ec4899);
+  --grad7:linear-gradient(135deg,#10b981,#6366f1);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(--text);min-height:100vh;overflow-x:hidden}
+a{color:var(--accent2);text-decoration:none}
+
+/* ── LOGIN SCREEN ── */
+#login-screen{
+  position:fixed;inset:0;background:var(--bg);
+  display:flex;align-items:center;justify-content:center;z-index:1000;
+}
+.login-card{
+  background:var(--surface);border:1px solid var(--border);border-radius:1.5rem;
+  padding:3rem 2.5rem;width:100%;max-width:420px;text-align:center;
+  box-shadow:0 25px 60px rgba(0,0,0,.6);
+}
+.login-card .logo{font-size:3.5rem;margin-bottom:1rem}
+.login-card h1{font-size:1.6rem;font-weight:800;margin-bottom:.4rem}
+.login-card p{color:var(--muted);font-size:.9rem;margin-bottom:2rem}
+.login-card input{
+  width:100%;padding:.8rem 1rem;background:var(--surface2);border:1px solid var(--border);
+  border-radius:.75rem;color:var(--text);font-size:1rem;margin-bottom:1rem;outline:none;
+  transition:border-color .2s;
+}
+.login-card input:focus{border-color:var(--accent)}
+.login-card input::placeholder{color:var(--muted)}
+.btn{
+  display:inline-flex;align-items:center;gap:.4rem;
+  padding:.65rem 1.3rem;border-radius:.65rem;font-size:.85rem;font-weight:600;
+  border:none;cursor:pointer;transition:opacity .2s,transform .15s;
+}
+.btn:hover{opacity:.85;transform:translateY(-1px)}
+.btn:active{transform:translateY(0)}
+.btn-primary{background:var(--grad1);color:#fff;width:100%;justify-content:center;font-size:1rem;padding:.85rem}
+.btn-sm{padding:.4rem .9rem;font-size:.78rem}
+.btn-danger{background:rgba(239,68,68,.15);color:var(--red);border:1px solid rgba(239,68,68,.3)}
+.btn-success{background:rgba(16,185,129,.15);color:var(--green);border:1px solid rgba(16,185,129,.3)}
+.btn-warn{background:rgba(245,158,11,.15);color:var(--yellow);border:1px solid rgba(245,158,11,.3)}
+.btn-info{background:rgba(56,189,248,.15);color:var(--blue);border:1px solid rgba(56,189,248,.3)}
+.btn-ghost{background:transparent;color:var(--muted);border:1px solid var(--border)}
+#login-error{color:var(--red);font-size:.85rem;margin-top:.5rem;display:none}
+
+/* ── MAIN LAYOUT ── */
+#app{display:none;min-height:100vh;flex-direction:column}
+#app.visible{display:flex}
+
+/* ── TOP BAR ── */
+.topbar{
+  background:var(--surface);border-bottom:1px solid var(--border);
+  padding:.9rem 2rem;display:flex;align-items:center;gap:1rem;
+  position:sticky;top:0;z-index:100;
+}
+.topbar-logo{font-weight:800;font-size:1.1rem;background:var(--grad1);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;white-space:nowrap}
+.topbar-api{
+  flex:1;display:flex;align-items:center;gap:.5rem;max-width:480px;
+}
+.topbar-api input{
+  flex:1;padding:.4rem .8rem;background:var(--surface2);border:1px solid var(--border);
+  border-radius:.5rem;color:var(--text);font-size:.8rem;outline:none;
+}
+.topbar-api input:focus{border-color:var(--accent)}
+#conn-pill{
+  padding:.25rem .7rem;border-radius:9999px;font-size:.72rem;font-weight:700;white-space:nowrap;
+}
+.pill-ok{background:rgba(16,185,129,.2);color:var(--green)}
+.pill-err{background:rgba(239,68,68,.2);color:var(--red)}
+.pill-loading{background:rgba(56,189,248,.2);color:var(--blue)}
+.topbar-right{display:flex;align-items:center;gap:.75rem;margin-left:auto}
+.auto-refresh-toggle{display:flex;align-items:center;gap:.4rem;font-size:.8rem;color:var(--muted);cursor:pointer}
+.auto-refresh-toggle input{accent-color:var(--accent);cursor:pointer}
+#last-updated{font-size:.75rem;color:var(--muted);white-space:nowrap}
+
+/* ── TABS ── */
+.tabs-bar{
+  background:var(--surface);border-bottom:1px solid var(--border);
+  display:flex;padding:0 2rem;overflow-x:auto;gap:.25rem;
+}
+.tab-btn{
+  padding:.85rem 1.2rem;font-size:.85rem;font-weight:600;
+  border:none;background:transparent;color:var(--muted);cursor:pointer;
+  border-bottom:2px solid transparent;white-space:nowrap;transition:all .2s;
+}
+.tab-btn:hover{color:var(--text)}
+.tab-btn.active{color:var(--accent2);border-bottom-color:var(--accent)}
+.tab-content{display:none;padding:2rem}
+.tab-content.active{display:block}
+
+/* ── STAT CARDS ── */
+.stat-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:1rem;margin-bottom:2rem}
+.stat-card{
+  background:var(--surface);border:1px solid var(--border);border-radius:1rem;
+  padding:1.3rem 1rem;text-align:center;position:relative;overflow:hidden;
+  transition:transform .2s,box-shadow .2s;
+}
+.stat-card:hover{transform:translateY(-4px);box-shadow:0 12px 30px rgba(0,0,0,.4)}
+.stat-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;border-radius:1rem 1rem 0 0}
+.stat-card:nth-child(1)::before{background:var(--grad1)}
+.stat-card:nth-child(2)::before{background:var(--grad2)}
+.stat-card:nth-child(3)::before{background:var(--grad3)}
+.stat-card:nth-child(4)::before{background:var(--grad5)}
+.stat-card:nth-child(5)::before{background:var(--grad6)}
+.stat-card:nth-child(6)::before{background:var(--grad7)}
+.stat-card:nth-child(7)::before{background:var(--grad4)}
+.stat-card .s-icon{font-size:1.8rem;margin-bottom:.5rem}
+.stat-card .s-val{font-size:1.9rem;font-weight:800;line-height:1}
+.stat-card .s-label{font-size:.75rem;color:var(--muted);margin-top:.35rem}
+.stat-card:nth-child(1) .s-val{background:var(--grad1);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.stat-card:nth-child(2) .s-val{background:var(--grad2);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.stat-card:nth-child(3) .s-val{background:var(--grad3);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.stat-card:nth-child(4) .s-val{background:var(--grad5);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.stat-card:nth-child(5) .s-val{background:var(--grad6);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.stat-card:nth-child(6) .s-val{background:var(--grad7);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.stat-card:nth-child(7) .s-val{background:var(--grad4);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+
+/* ── SECTION HEADER ── */
+.section-hdr{
+  display:flex;align-items:center;gap:.75rem;margin-bottom:1rem;flex-wrap:wrap;
+}
+.section-hdr h2{font-size:1.05rem;font-weight:700;flex:1}
+.section-hdr .hdr-actions{display:flex;gap:.5rem;flex-wrap:wrap}
+.search-box{
+  padding:.4rem .8rem;background:var(--surface2);border:1px solid var(--border);
+  border-radius:.5rem;color:var(--text);font-size:.82rem;outline:none;width:220px;
+}
+.search-box:focus{border-color:var(--accent)}
+
+/* ── TABLE ── */
+.table-wrap{overflow-x:auto;border-radius:.8rem;border:1px solid var(--border)}
+table{width:100%;border-collapse:collapse;font-size:.82rem}
+thead th{
+  background:var(--surface2);padding:.7rem .9rem;text-align:left;
+  font-weight:600;font-size:.75rem;color:var(--muted);white-space:nowrap;
+  cursor:pointer;user-select:none;
+}
+thead th:hover{color:var(--text)}
+thead th.sorted{color:var(--accent2)}
+tbody td{padding:.65rem .9rem;border-top:1px solid var(--border);vertical-align:middle}
+tbody tr:hover td{background:rgba(255,255,255,.02)}
+tbody tr:first-child td{border-top:none}
+.rank{font-weight:700;color:var(--accent2)}
+.badge{
+  display:inline-flex;align-items:center;gap:.25rem;
+  padding:.18rem .55rem;border-radius:9999px;font-size:.7rem;font-weight:700;white-space:nowrap;
+}
+.b-green{background:rgba(16,185,129,.15);color:var(--green)}
+.b-blue{background:rgba(56,189,248,.15);color:var(--blue)}
+.b-purple{background:rgba(139,92,246,.15);color:#c4b5fd}
+.b-yellow{background:rgba(245,158,11,.15);color:var(--yellow)}
+.b-red{background:rgba(239,68,68,.15);color:var(--red)}
+.b-gray{background:rgba(107,127,163,.15);color:var(--muted)}
+.actions-cell{display:flex;gap:.35rem;flex-wrap:wrap}
+
+/* ── CARDS / PANELS ── */
+.panel{background:var(--surface);border:1px solid var(--border);border-radius:1rem;padding:1.3rem}
+.panel+.panel{margin-top:1rem}
+.panel-title{font-size:.9rem;font-weight:700;margin-bottom:1rem;display:flex;align-items:center;gap:.4rem}
+
+/* ── MODAL ── */
+.modal-overlay{
+  position:fixed;inset:0;background:rgba(0,0,0,.7);backdrop-filter:blur(4px);
+  z-index:500;display:flex;align-items:center;justify-content:center;
+  opacity:0;pointer-events:none;transition:opacity .2s;
+}
+.modal-overlay.open{opacity:1;pointer-events:all}
+.modal{
+  background:var(--surface);border:1px solid var(--border);border-radius:1.2rem;
+  padding:2rem;width:100%;max-width:440px;box-shadow:0 30px 80px rgba(0,0,0,.6);
+}
+.modal h3{font-size:1.1rem;font-weight:700;margin-bottom:.4rem}
+.modal p{color:var(--muted);font-size:.88rem;margin-bottom:1.5rem}
+.modal .field{margin-bottom:1rem}
+.modal label{display:block;font-size:.8rem;color:var(--muted);margin-bottom:.35rem;font-weight:600}
+.modal input,.modal select{
+  width:100%;padding:.65rem .9rem;background:var(--surface2);border:1px solid var(--border);
+  border-radius:.6rem;color:var(--text);font-size:.9rem;outline:none;
+}
+.modal input:focus,.modal select:focus{border-color:var(--accent)}
+.modal-actions{display:flex;gap:.75rem;justify-content:flex-end;margin-top:1.5rem}
+
+/* ── TOAST ── */
+#toast{
+  position:fixed;bottom:2rem;right:2rem;z-index:9999;
+  display:flex;flex-direction:column;gap:.5rem;
+}
+.toast-item{
+  background:var(--surface);border:1px solid var(--border);border-radius:.75rem;
+  padding:.75rem 1.2rem;font-size:.85rem;box-shadow:0 8px 25px rgba(0,0,0,.5);
+  animation:slideIn .25s ease;max-width:320px;
+}
+.toast-ok{border-left:3px solid var(--green)}
+.toast-err{border-left:3px solid var(--red)}
+.toast-info{border-left:3px solid var(--blue)}
+@keyframes slideIn{from{opacity:0;transform:translateX(20px)}to{opacity:1;transform:translateX(0)}}
+
+/* ── QUEUE ITEM ── */
+.queue-item{
+  background:var(--surface);border:1px solid var(--border);border-radius:.85rem;
+  padding:1rem 1.1rem;display:flex;align-items:center;gap:1rem;flex-wrap:wrap;
+  transition:border-color .2s;
+}
+.queue-item:hover{border-color:var(--accent)}
+.queue-item+.queue-item{margin-top:.75rem}
+.qi-pos{
+  width:2rem;height:2rem;border-radius:50%;background:var(--grad1);
+  display:flex;align-items:center;justify-content:center;font-weight:800;font-size:.8rem;flex-shrink:0;
+}
+.qi-info{flex:1;min-width:160px}
+.qi-name{font-weight:600;font-size:.88rem}
+.qi-url{font-size:.75rem;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:320px}
+.qi-time{font-size:.72rem;color:var(--muted);margin-top:.2rem}
+
+/* ── CACHE GRID ── */
+.cache-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:.9rem}
+.cache-card{
+  background:var(--surface);border:1px solid var(--border);border-radius:.85rem;
+  padding:1rem;transition:border-color .2s;
+}
+.cache-card:hover{border-color:var(--accent)}
+.cache-card .cc-title{font-weight:600;font-size:.88rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-bottom:.4rem}
+.cache-card .cc-meta{font-size:.75rem;color:var(--muted)}
+
+/* ── EXPORT ── */
+.export-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:1rem}
+.export-card{
+  background:var(--surface);border:1px solid var(--border);border-radius:1rem;
+  padding:1.5rem;text-align:center;cursor:pointer;transition:all .2s;
+}
+.export-card:hover{border-color:var(--accent);transform:translateY(-3px)}
+.export-card .ec-icon{font-size:2.5rem;margin-bottom:.8rem}
+.export-card h3{font-size:.95rem;font-weight:700;margin-bottom:.3rem}
+.export-card p{font-size:.78rem;color:var(--muted)}
+
+/* ── EMPTY STATE ── */
+.empty{text-align:center;padding:3rem 1rem;color:var(--muted)}
+.empty .e-icon{font-size:3rem;margin-bottom:.75rem}
+.empty p{font-size:.88rem}
+
+/* ── LOADER ── */
+.spinner{
+  width:28px;height:28px;border:3px solid var(--border);border-top-color:var(--accent);
+  border-radius:50%;animation:spin .7s linear infinite;margin:2rem auto;
+}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* ── SCROLLBAR ── */
+::-webkit-scrollbar{width:6px;height:6px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:var(--border);border-radius:4px}
+::-webkit-scrollbar-thumb:hover{background:var(--muted)}
+
+/* ── RESPONSIVE ── */
+@media(max-width:640px){
+  .topbar{padding:.75rem 1rem;flex-wrap:wrap;gap:.5rem}
+  .tab-content{padding:1rem}
+  .stat-grid{grid-template-columns:repeat(2,1fr)}
+}
+</style>
+</head>
+<body>
+
+<!-- ── LOGIN ── -->
+<div id="login-screen">
+  <div class="login-card">
+    <div class="logo">📊</div>
+    <h1>Admin Dashboard</h1>
+    <p>YouTube-to-PDF Bot · Secure Access</p>
+    <input type="text" id="api-url-input" placeholder="Bot API URL (e.g. https://yourbot.onrender.com)" autocomplete="off"/>
+    <input type="password" id="token-input" placeholder="Admin Token" autocomplete="off"/>
+    <button class="btn btn-primary" onclick="doLogin()">🔐 Login</button>
+    <div id="login-error">❌ Token गलत है या API URL से connect नहीं हो सका।</div>
+  </div>
+</div>
+
+<!-- ── MAIN APP ── -->
+<div id="app">
+
+  <!-- TOP BAR -->
+  <div class="topbar">
+    <span class="topbar-logo">📊 Bot Dashboard</span>
+    <div class="topbar-api">
+      <input id="api-url-bar" type="text" placeholder="API URL..." oninput="updateApiUrl(this.value)"/>
+      <span id="conn-pill" class="pill-loading">connecting…</span>
+    </div>
+    <div class="topbar-right">
+      <label class="auto-refresh-toggle">
+        <input type="checkbox" id="auto-refresh" checked onchange="toggleAutoRefresh()"/> Auto-refresh
+      </label>
+      <span id="last-updated">Never</span>
+      <button class="btn btn-sm btn-ghost" onclick="refreshAll()">🔄 Refresh</button>
+      <button class="btn btn-sm btn-danger" onclick="logout()">Logout</button>
+    </div>
+  </div>
+
+  <!-- TABS -->
+  <div class="tabs-bar">
+    <button class="tab-btn active" onclick="switchTab('overview',this)">📊 Overview</button>
+    <button class="tab-btn" onclick="switchTab('users',this)">👥 Users</button>
+    <button class="tab-btn" onclick="switchTab('queue',this)">📋 Queue</button>
+    <button class="tab-btn" onclick="switchTab('cache',this)">⚡ Cache</button>
+    <button class="tab-btn" onclick="switchTab('export',this)">📥 Export</button>
+  </div>
+
+  <!-- ── OVERVIEW TAB ── -->
+  <div class="tab-content active" id="tab-overview">
+    <div class="stat-grid" id="stat-grid">
+      <div class="stat-card"><div class="s-icon">👥</div><div class="s-val" id="s-users">—</div><div class="s-label">Total Users</div></div>
+      <div class="stat-card"><div class="s-icon">🎬</div><div class="s-val" id="s-videos">—</div><div class="s-label">Videos Converted</div></div>
+      <div class="stat-card"><div class="s-icon">📄</div><div class="s-val" id="s-pdfs">—</div><div class="s-label">PDFs Generated</div></div>
+      <div class="stat-card"><div class="s-icon">⏱️</div><div class="s-val" id="s-dur">—</div><div class="s-label">Total Duration</div></div>
+      <div class="stat-card"><div class="s-icon">⚡</div><div class="s-val" id="s-cache">—</div><div class="s-label">Cached Videos</div></div>
+      <div class="stat-card"><div class="s-icon">🔄</div><div class="s-val" id="s-active">—</div><div class="s-label">Active Now</div></div>
+      <div class="stat-card"><div class="s-icon">📋</div><div class="s-val" id="s-queue">—</div><div class="s-label">Queued</div></div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-title">🏆 Top 10 Users by Videos</div>
+      <div class="table-wrap">
+        <table id="top-users-table">
+          <thead><tr>
+            <th>#</th><th>Name</th><th>Username</th>
+            <th onclick="sortTable('top-users-table',3)">Videos ↕</th>
+            <th onclick="sortTable('top-users-table',4)">PDFs ↕</th>
+            <th onclick="sortTable('top-users-table',5)">Duration ↕</th>
+            <th>Joined</th>
+          </tr></thead>
+          <tbody id="top-users-body"><tr><td colspan="7" style="text-align:center;padding:2rem"><div class="spinner"></div></td></tr></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── USERS TAB ── -->
+  <div class="tab-content" id="tab-users">
+    <div class="section-hdr">
+      <h2>👥 All Users</h2>
+      <div class="hdr-actions">
+        <input class="search-box" id="users-search" type="text" placeholder="🔍 Search name / username / ID…" oninput="filterUsers()"/>
+        <button class="btn btn-sm btn-info" onclick="refreshAll()">🔄 Refresh</button>
+      </div>
+    </div>
+    <div class="table-wrap">
+      <table id="users-table">
+        <thead><tr>
+          <th>#</th>
+          <th onclick="sortUsersTable(1)">Name ↕</th>
+          <th>Username</th>
+          <th>User ID</th>
+          <th onclick="sortUsersTable(4)">Videos ↕</th>
+          <th onclick="sortUsersTable(5)">PDFs ↕</th>
+          <th onclick="sortUsersTable(6)">Duration ↕</th>
+          <th>Limit</th>
+          <th>Joined</th>
+          <th>Actions</th>
+        </tr></thead>
+        <tbody id="users-body"><tr><td colspan="10" style="text-align:center;padding:2rem"><div class="spinner"></div></td></tr></tbody>
+      </table>
+    </div>
+    <div id="users-count" style="margin-top:.75rem;font-size:.8rem;color:var(--muted)"></div>
+  </div>
+
+  <!-- ── QUEUE TAB ── -->
+  <div class="tab-content" id="tab-queue">
+    <div class="section-hdr">
+      <h2>📋 Request Queue</h2>
+      <div class="hdr-actions">
+        <button class="btn btn-sm btn-info" onclick="refreshAll()">🔄 Refresh</button>
+        <button class="btn btn-sm btn-danger" onclick="confirmClearQueue()">🗑️ Clear All</button>
+      </div>
+    </div>
+    <div id="queue-list"><div class="spinner"></div></div>
+  </div>
+
+  <!-- ── CACHE TAB ── -->
+  <div class="tab-content" id="tab-cache">
+    <div class="section-hdr">
+      <h2>⚡ PDF Cache</h2>
+      <div class="hdr-actions">
+        <input class="search-box" id="cache-search" type="text" placeholder="🔍 Search title / video ID…" oninput="filterCache()"/>
+        <button class="btn btn-sm btn-info" onclick="refreshAll()">🔄 Refresh</button>
+      </div>
+    </div>
+    <div id="cache-count" style="margin-bottom:.75rem;font-size:.8rem;color:var(--muted)"></div>
+    <div class="cache-grid" id="cache-grid"><div class="spinner"></div></div>
+  </div>
+
+  <!-- ── EXPORT TAB ── -->
+  <div class="tab-content" id="tab-export">
+    <div class="panel" style="margin-bottom:1.5rem">
+      <div class="panel-title">ℹ️ Data Export</div>
+      <p style="font-size:.85rem;color:var(--muted)">
+        नीचे दिए options से bot का data download करें।<br>
+        कोई video या PDF files store नहीं होती — केवल user stats और bot data export होता है।
+      </p>
+    </div>
+    <div class="export-grid">
+      <div class="export-card" onclick="exportJSON('users')">
+        <div class="ec-icon">👥</div>
+        <h3>Users JSON</h3>
+        <p>सभी users का complete data JSON format में</p>
+      </div>
+      <div class="export-card" onclick="exportJSON('stats')">
+        <div class="ec-icon">📊</div>
+        <h3>Stats JSON</h3>
+        <p>Bot की global stats JSON format में</p>
+      </div>
+      <div class="export-card" onclick="exportJSON('queue')">
+        <div class="ec-icon">📋</div>
+        <h3>Queue JSON</h3>
+        <p>Current queue data JSON format में</p>
+      </div>
+      <div class="export-card" onclick="exportUsersHTML()">
+        <div class="ec-icon">📄</div>
+        <h3>Users HTML Report</h3>
+        <p>Beautiful HTML report — browser में खुलेगा, print या save कर सकते हैं</p>
+      </div>
+      <div class="export-card" onclick="exportCSV()">
+        <div class="ec-icon">📑</div>
+        <h3>Users CSV</h3>
+        <p>Excel/Sheets में खोलें — सभी user stats</p>
+      </div>
+      <div class="export-card" onclick="copyApiInfo()">
+        <div class="ec-icon">🔗</div>
+        <h3>API Endpoints</h3>
+        <p>सभी API endpoints की list copy करें</p>
+      </div>
+    </div>
+  </div>
+
+</div><!-- /#app -->
+
+<!-- ── MODALS ── -->
+<div class="modal-overlay" id="modal-grant">
+  <div class="modal">
+    <h3>⭐ Grant Extended Limit</h3>
+    <p>इस user को कितने घंटे की videos allow करनी हैं?</p>
+    <div class="field"><label>User</label><input id="grant-user-info" readonly/></div>
+    <div class="field"><label>Max Hours</label><input type="number" id="grant-hours" min="1" max="200" value="10" placeholder="e.g. 50"/></div>
+    <input type="hidden" id="grant-uid"/>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeModal('modal-grant')">Cancel</button>
+      <button class="btn btn-success" onclick="submitGrant()">✅ Grant</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="modal-delete">
+  <div class="modal">
+    <h3>🗑️ Delete User</h3>
+    <p>क्या आप सच में इस user को delete करना चाहते हैं? यह action undo नहीं होगा।</p>
+    <div class="field"><label>User</label><input id="delete-user-info" readonly/></div>
+    <input type="hidden" id="delete-uid"/>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeModal('modal-delete')">Cancel</button>
+      <button class="btn btn-danger" onclick="submitDelete()">🗑️ Delete</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="modal-queue-clear">
+  <div class="modal">
+    <h3>🗑️ Queue Clear करें?</h3>
+    <p>सभी queued requests delete हो जाएंगी। यह action undo नहीं होगा।</p>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeModal('modal-queue-clear')">Cancel</button>
+      <button class="btn btn-danger" onclick="submitClearQueue()">🗑️ Clear Queue</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── TOAST ── -->
+<div id="toast"></div>
+
+<script>
+// ── STATE ──────────────────────────────────────────────────────────────────
+let API_URL = localStorage.getItem('api_url') || '';
+let ADMIN_TOKEN = localStorage.getItem('admin_token') || '';
+let allUsers = [], grantedUsers = {}, allCache = {}, allQueue = [];
+let usersSort = {col:4, asc:false};
+let autoRefreshTimer = null;
+const AUTO_REFRESH_INTERVAL = 30000;
+
+// ── INIT ───────────────────────────────────────────────────────────────────
+window.onload = () => {
+  if (API_URL && ADMIN_TOKEN) {
+    document.getElementById('api-url-input').value = API_URL;
+    document.getElementById('token-input').value = '••••••••';
+    verifyAndLogin();
+  } else {
+    document.getElementById('api-url-input').value = API_URL;
+  }
+};
+
+// ── LOGIN ──────────────────────────────────────────────────────────────────
+async function doLogin() {
+  const url = document.getElementById('api-url-input').value.trim().replace(/\/$/, '');
+  const token = document.getElementById('token-input').value.trim();
+  if (!url || !token) { showLoginError(); return; }
+  API_URL = url; ADMIN_TOKEN = token;
+  await verifyAndLogin();
+}
+
+async function verifyAndLogin() {
+  setPill('loading', 'connecting…');
+  try {
+    const r = await apiFetch('/api/stats');
+    if (!r.ok) throw new Error();
+    localStorage.setItem('api_url', API_URL);
+    localStorage.setItem('admin_token', ADMIN_TOKEN);
+    document.getElementById('login-screen').style.display = 'none';
+    document.getElementById('app').classList.add('visible');
+    document.getElementById('api-url-bar').value = API_URL;
+    setPill('ok', '✅ Connected');
+    refreshAll();
+    startAutoRefresh();
+  } catch {
+    showLoginError();
+    setPill('err', '❌ Failed');
+  }
+}
+
+function showLoginError() {
+  const el = document.getElementById('login-error');
+  el.style.display = 'block';
+  setTimeout(() => el.style.display = 'none', 4000);
+}
+
+function logout() {
+  localStorage.removeItem('admin_token');
+  location.reload();
+}
+
+function updateApiUrl(val) {
+  API_URL = val.trim().replace(/\/$/, '');
+}
+
+// ── API ────────────────────────────────────────────────────────────────────
+async function apiFetch(path, opts = {}) {
+  const url = API_URL + path;
+  const headers = { 'Content-Type': 'application/json', 'X-Admin-Token': ADMIN_TOKEN, ...opts.headers };
+  return fetch(url, { ...opts, headers });
+}
+
+async function apiGet(path) {
+  const r = await apiFetch(path);
+  if (!r.ok) throw new Error(r.status);
+  return r.json();
+}
+
+async function apiPost(path, body) {
+  const r = await apiFetch(path, { method: 'POST', body: JSON.stringify(body) });
+  const data = await r.json();
+  if (!data.ok) throw new Error(data.error || 'Failed');
+  return data;
+}
+
+// ── REFRESH ────────────────────────────────────────────────────────────────
+async function refreshAll() {
+  setPill('loading', 'loading…');
+  try {
+    const [stats, users, queue, cache, granted] = await Promise.all([
+      apiGet('/api/stats'),
+      apiGet('/api/users'),
+      apiGet('/api/queue'),
+      apiGet('/api/cache'),
+      apiGet('/api/granted').catch(() => ({})),
+    ]);
+    allUsers = users; allQueue = queue; allCache = cache; grantedUsers = granted;
+    renderStats(stats);
+    renderTopUsers(users);
+    renderUsers(users);
+    renderQueue(queue);
+    renderCache(cache);
+    setPill('ok', '✅ Connected');
+    document.getElementById('last-updated').textContent = 'Updated: ' + new Date().toLocaleTimeString();
+  } catch (e) {
+    setPill('err', '❌ Error');
+    toast('API से data load नहीं हुआ: ' + e.message, 'err');
+  }
+}
+
+// ── STATS ──────────────────────────────────────────────────────────────────
+function renderStats(s) {
+  set('s-users', s.total_users ?? '—');
+  set('s-videos', s.total_videos_converted ?? '—');
+  set('s-pdfs', s.total_pdfs_generated ?? '—');
+  const h = Math.floor((s.total_duration_seconds||0)/3600);
+  const m = Math.floor(((s.total_duration_seconds||0)%3600)/60);
+  set('s-dur', h + 'h ' + m + 'm');
+  set('s-cache', s.cached_videos ?? '—');
+  set('s-active', s.active_requests ?? '—');
+  set('s-queue', s.queue_size ?? '—');
+}
+
+// ── TOP USERS ──────────────────────────────────────────────────────────────
+function renderTopUsers(users) {
+  const sorted = [...users].sort((a,b) => (b.videos_converted||0)-(a.videos_converted||0)).slice(0,10);
+  const medals = ['🥇','🥈','🥉'];
+  document.getElementById('top-users-body').innerHTML = sorted.length ? sorted.map((u,i) => {
+    const h=Math.floor((u.total_duration_seconds||0)/3600), m=Math.floor(((u.total_duration_seconds||0)%3600)/60);
+    return `<tr>
+      <td class="rank">${medals[i]||i+1}</td>
+      <td>${esc(u.real_name||'?')}</td>
+      <td><span class="badge b-blue">@${esc(u.username||'?')}</span></td>
+      <td><span class="badge b-purple">${u.videos_converted||0}</span></td>
+      <td><span class="badge b-green">${u.pdfs_generated||0}</span></td>
+      <td>${h}h ${m}m</td>
+      <td style="color:var(--muted);font-size:.75rem">${u.joined_at||'?'}</td>
+    </tr>`;
+  }).join('') : '<tr><td colspan="7" class="empty"><div class="e-icon">👤</div><p>No users yet</p></td></tr>';
+}
+
+// ── USERS TABLE ────────────────────────────────────────────────────────────
+let filteredUsers = [];
+function renderUsers(users) {
+  filteredUsers = [...users];
+  applyUserFilter();
+}
+
+function filterUsers() {
+  const q = document.getElementById('users-search').value.toLowerCase();
+  filteredUsers = q
+    ? allUsers.filter(u =>
+        (u.real_name||'').toLowerCase().includes(q) ||
+        (u.username||'').toLowerCase().includes(q) ||
+        String(u.user_id).includes(q))
+    : [...allUsers];
+  applyUserFilter();
+}
+
+function applyUserFilter() {
+  const sorted = [...filteredUsers].sort((a,b) => {
+    const cols = [null,'real_name','username','user_id','videos_converted','pdfs_generated','total_duration_seconds'];
+    const key = cols[usersSort.col];
+    if (!key) return 0;
+    const av = a[key]||0, bv = b[key]||0;
+    return usersSort.asc ? (av>bv?1:-1) : (av<bv?1:-1);
+  });
+  document.getElementById('users-count').textContent = `Showing ${sorted.length} of ${allUsers.length} users`;
+  document.getElementById('users-body').innerHTML = sorted.length ? sorted.map((u,i) => {
+    const h=Math.floor((u.total_duration_seconds||0)/3600), m=Math.floor(((u.total_duration_seconds||0)%3600)/60);
+    const granted = grantedUsers[String(u.user_id)];
+    const limitBadge = granted
+      ? `<span class="badge b-yellow">⭐ ${granted.max_hours}h</span>`
+      : `<span class="badge b-gray">2h</span>`;
+    return `<tr>
+      <td class="rank">${i+1}</td>
+      <td style="font-weight:600">${esc(u.real_name||'?')}</td>
+      <td><a href="https://t.me/${esc(u.username||'')}" target="_blank" class="badge b-blue">@${esc(u.username||'?')}</a></td>
+      <td style="font-family:monospace;font-size:.78rem;color:var(--muted)">${u.user_id}</td>
+      <td><span class="badge b-purple">${u.videos_converted||0}</span></td>
+      <td><span class="badge b-green">${u.pdfs_generated||0}</span></td>
+      <td>${h}h ${m}m</td>
+      <td>${limitBadge}</td>
+      <td style="color:var(--muted);font-size:.75rem">${(u.joined_at||'').split(' ')[0]||'?'}</td>
+      <td><div class="actions-cell">
+        <button class="btn btn-sm btn-warn" onclick='openGrant(${JSON.stringify(u)})'>⭐ Grant</button>
+        ${granted?`<button class="btn btn-sm btn-ghost" onclick="submitRevoke(${u.user_id})">↩️ Revoke</button>`:''}
+        <button class="btn btn-sm btn-danger" onclick='openDelete(${JSON.stringify(u)})'>🗑️</button>
+      </div></td>
+    </tr>`;
+  }).join('') : '<tr><td colspan="10" style="text-align:center;padding:2rem;color:var(--muted)">No users found</td></tr>';
+}
+
+function sortUsersTable(col) {
+  if (usersSort.col === col) usersSort.asc = !usersSort.asc;
+  else { usersSort.col = col; usersSort.asc = false; }
+  applyUserFilter();
+}
+
+// ── QUEUE ──────────────────────────────────────────────────────────────────
+function renderQueue(queue) {
+  const el = document.getElementById('queue-list');
+  if (!queue.length) {
+    el.innerHTML = '<div class="empty"><div class="e-icon">✅</div><p>Queue खाली है!</p></div>';
+    return;
+  }
+  el.innerHTML = queue.map((item,i) => `
+    <div class="queue-item">
+      <div class="qi-pos">${i+1}</div>
+      <div class="qi-info">
+        <div class="qi-name">${esc(item.user_name||'?')} <span class="badge b-blue">@${esc(item.username||'?')}</span></div>
+        <div class="qi-url" title="${esc(item.url||'')}">${esc(item.url||'?')}</div>
+        <div class="qi-time">⏰ ${item.queued_at||'?'} · ID: ${String(item.user_id)}</div>
+      </div>
+      <button class="btn btn-sm btn-danger" onclick="removeQueueItem('${item.queue_id}')">✕ Remove</button>
+    </div>
+  `).join('');
+}
+
+async function removeQueueItem(qid) {
+  try {
+    await apiPost('/api/admin/remove_queue_item', { queue_id: qid });
+    toast('Queue item remove हो गया', 'ok');
+    refreshAll();
+  } catch(e) { toast('Error: ' + e.message, 'err'); }
+}
+
+function confirmClearQueue() { openModal('modal-queue-clear'); }
+async function submitClearQueue() {
+  try {
+    const r = await apiPost('/api/admin/clear_queue', {});
+    toast(`Queue clear! ${r.cleared} items removed.`, 'ok');
+    closeModal('modal-queue-clear');
+    refreshAll();
+  } catch(e) { toast('Error: ' + e.message, 'err'); }
+}
+
+// ── CACHE ──────────────────────────────────────────────────────────────────
+function renderCache(cache) {
+  const entries = Object.entries(cache);
+  document.getElementById('cache-count').textContent = `${entries.length} videos cached`;
+  filterCache();
+}
+
+function filterCache() {
+  const q = document.getElementById('cache-search')?.value.toLowerCase() || '';
+  const entries = Object.entries(allCache).filter(([vid,v]) =>
+    !q || (v.title||'').toLowerCase().includes(q) || vid.includes(q));
+  const el = document.getElementById('cache-grid');
+  if (!entries.length) {
+    el.innerHTML = '<div class="empty"><div class="e-icon">⚡</div><p>No cached videos yet</p></div>';
+    return;
+  }
+  el.innerHTML = entries.map(([vid,v]) => `
+    <div class="cache-card">
+      <div class="cc-title" title="${esc(v.title||'?')}">${esc(v.title||'Unknown')}</div>
+      <div class="cc-meta">
+        <span class="badge b-green" style="margin-right:.35rem">${v.parts} part(s)</span>
+        <span style="font-family:monospace">${vid}</span>
+      </div>
+    </div>
+  `).join('');
+}
+
+// ── GRANT/REVOKE/DELETE ────────────────────────────────────────────────────
+function openGrant(u) {
+  document.getElementById('grant-uid').value = u.user_id;
+  document.getElementById('grant-user-info').value = `${u.real_name||'?'} (@${u.username||'?'}) · ID: ${u.user_id}`;
+  const g = grantedUsers[String(u.user_id)];
+  document.getElementById('grant-hours').value = g ? g.max_hours : 10;
+  openModal('modal-grant');
+}
+async function submitGrant() {
+  const uid = document.getElementById('grant-uid').value;
+  const hours = parseFloat(document.getElementById('grant-hours').value);
+  try {
+    await apiPost('/api/admin/grant_user', { user_id: parseInt(uid), max_hours: hours });
+    toast(`✅ User ${uid} को ${hours}h limit grant हो गई!`, 'ok');
+    closeModal('modal-grant');
+    refreshAll();
+  } catch(e) { toast('Error: ' + e.message, 'err'); }
+}
+
+async function submitRevoke(uid) {
+  try {
+    await apiPost('/api/admin/revoke_user', { user_id: uid });
+    toast('✅ Extended limit revoke हो गई', 'ok');
+    refreshAll();
+  } catch(e) { toast('Error: ' + e.message, 'err'); }
+}
+
+function openDelete(u) {
+  document.getElementById('delete-uid').value = u.user_id;
+  document.getElementById('delete-user-info').value = `${u.real_name||'?'} (@${u.username||'?'}) · ID: ${u.user_id}`;
+  openModal('modal-delete');
+}
+async function submitDelete() {
+  const uid = document.getElementById('delete-uid').value;
+  try {
+    const r = await apiPost('/api/admin/delete_user', { user_id: parseInt(uid) });
+    toast(r.removed ? '🗑️ User delete हो गया' : '⚠️ User नहीं मिला', r.removed ? 'ok' : 'info');
+    closeModal('modal-delete');
+    refreshAll();
+  } catch(e) { toast('Error: ' + e.message, 'err'); }
+}
+
+// ── EXPORT ────────────────────────────────────────────────────────────────
+async function exportJSON(type) {
+  try {
+    const data = type === 'stats' ? await apiGet('/api/stats')
+      : type === 'users' ? await apiGet('/api/users')
+      : await apiGet('/api/queue');
+    download(JSON.stringify(data, null, 2), `bot_${type}_${datestamp()}.json`, 'application/json');
+    toast(`${type} JSON downloaded!`, 'ok');
+  } catch(e) { toast('Error: ' + e.message, 'err'); }
+}
+
+async function exportCSV() {
+  try {
+    const users = await apiGet('/api/users');
+    const headers = ['user_id','real_name','username','videos_converted','pdfs_generated','total_duration_seconds','joined_at'];
+    const rows = users.map(u => headers.map(h => JSON.stringify(u[h]??'')).join(','));
+    download(headers.join(',') + '\n' + rows.join('\n'), `bot_users_${datestamp()}.csv`, 'text/csv');
+    toast('CSV downloaded!', 'ok');
+  } catch(e) { toast('Error: ' + e.message, 'err'); }
+}
+
+async function exportUsersHTML() {
+  try {
+    const [users, stats, granted] = await Promise.all([apiGet('/api/users'), apiGet('/api/stats'), apiGet('/api/granted').catch(()=>({}))]);
+    const rows = [...users].sort((a,b)=>(b.videos_converted||0)-(a.videos_converted||0)).map((u,i)=>{
+      const h=Math.floor((u.total_duration_seconds||0)/3600), m=Math.floor(((u.total_duration_seconds||0)%3600)/60);
+      const g = granted[String(u.user_id)];
+      return `<tr><td>${i+1}</td><td>${esc(u.real_name||'?')}</td><td>@${esc(u.username||'?')}</td>
+        <td>${u.user_id}</td><td>${u.videos_converted||0}</td><td>${u.pdfs_generated||0}</td>
+        <td>${h}h ${m}m</td><td>${g?g.max_hours+'h (granted)':'2h (default)'}</td><td>${u.joined_at||'?'}</td></tr>`;
+    }).join('');
+    const html = `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Bot Users Report</title>
+<style>body{font-family:sans-serif;background:#0f172a;color:#e2e8f0;padding:2rem}
+h1{color:#818cf8;margin-bottom:1.5rem}
+.meta{color:#94a3b8;font-size:.85rem;margin-bottom:2rem}
+table{width:100%;border-collapse:collapse}
+th{background:#1e293b;padding:.75rem;text-align:left;font-size:.8rem;color:#c7d2fe}
+td{padding:.65rem;border-bottom:1px solid #1e293b;font-size:.82rem}
+tr:hover td{background:#1e293b}
+</style></head><body>
+<h1>📊 YouTube-to-PDF Bot — Users Report</h1>
+<div class="meta">Generated: ${new Date().toLocaleString()} | Total: ${stats.total_users} users | Videos: ${stats.total_videos_converted}</div>
+<table><thead><tr><th>#</th><th>Name</th><th>Username</th><th>User ID</th><th>Videos</th><th>PDFs</th><th>Duration</th><th>Limit</th><th>Joined</th></tr></thead>
+<tbody>${rows}</tbody></table></body></html>`;
+    download(html, `bot_users_report_${datestamp()}.html`, 'text/html');
+    toast('HTML Report downloaded!', 'ok');
+  } catch(e) { toast('Error: ' + e.message, 'err'); }
+}
+
+function copyApiInfo() {
+  const info = `Bot API Endpoints (Base: ${API_URL})
+
+GET  /api/stats         — Global stats
+GET  /api/users         — All users list
+GET  /api/queue         — Current queue
+GET  /api/cache         — Cached videos
+GET  /api/granted       — Granted users
+
+POST /api/admin/grant_user      {user_id, max_hours}
+POST /api/admin/revoke_user     {user_id}
+POST /api/admin/delete_user     {user_id}
+POST /api/admin/clear_queue     {}
+POST /api/admin/remove_queue_item {queue_id}
+
+Header: X-Admin-Token: <your_token>`;
+  navigator.clipboard.writeText(info).then(() => toast('API info copied!', 'info'));
+}
+
+// ── HELPERS ────────────────────────────────────────────────────────────────
+function switchTab(name, btn) {
+  document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+  document.getElementById('tab-'+name).classList.add('active');
+  btn.classList.add('active');
+}
+
+function openModal(id) { document.getElementById(id).classList.add('open'); }
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+document.querySelectorAll('.modal-overlay').forEach(el => {
+  el.addEventListener('click', e => { if (e.target === el) el.classList.remove('open'); });
+});
+
+function setPill(type, text) {
+  const el = document.getElementById('conn-pill');
+  el.textContent = text;
+  el.className = 'pill-' + type;
+}
+
+function toast(msg, type = 'info') {
+  const el = document.createElement('div');
+  el.className = `toast-item toast-${type}`;
+  el.textContent = msg;
+  document.getElementById('toast').appendChild(el);
+  setTimeout(() => el.remove(), 4000);
+}
+
+function set(id, val) { const el = document.getElementById(id); if (el) el.textContent = val; }
+function esc(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function datestamp() { return new Date().toISOString().slice(0,10); }
+function download(content, filename, type) {
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([content], { type }));
+  a.download = filename; a.click(); URL.revokeObjectURL(a.href);
+}
+
+function sortTable(tableId, col) {
+  const tb = document.getElementById(tableId).querySelector('tbody');
+  const rows = Array.from(tb.querySelectorAll('tr'));
+  const asc = tb.dataset.sortCol === String(col) && tb.dataset.sortAsc === '1';
+  rows.sort((a,b) => {
+    const av = a.cells[col]?.textContent.trim() || '';
+    const bv = b.cells[col]?.textContent.trim() || '';
+    const an = parseFloat(av), bn = parseFloat(bv);
+    if (!isNaN(an) && !isNaN(bn)) return asc ? an-bn : bn-an;
+    return asc ? av.localeCompare(bv) : bv.localeCompare(av);
+  });
+  tb.dataset.sortCol = col; tb.dataset.sortAsc = asc ? '0' : '1';
+  rows.forEach(r => tb.appendChild(r));
+}
+
+function startAutoRefresh() {
+  if (autoRefreshTimer) clearInterval(autoRefreshTimer);
+  autoRefreshTimer = setInterval(refreshAll, AUTO_REFRESH_INTERVAL);
+}
+function toggleAutoRefresh() {
+  if (document.getElementById('auto-refresh').checked) startAutoRefresh();
+  else { clearInterval(autoRefreshTimer); autoRefreshTimer = null; }
+}
+</script>
+</body>
+</html>
