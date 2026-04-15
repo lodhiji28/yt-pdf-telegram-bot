@@ -448,12 +448,28 @@ def format_duration(seconds):
         return f"{hours}h {minutes}m"
 
 def get_video_duration(video_id):
+    video_url = f"https://www.youtube.com/watch?v={video_id}"
     try:
         from pytubefix import YouTube
-        yt = YouTube(f"https://www.youtube.com/watch?v={video_id}")
-        return yt.length or 0
+        yt = YouTube(video_url)
+        duration = yt.length or 0
+        if duration:
+            return duration
     except Exception as e:
-        print(f"⚠️  Duration check error for {video_id}: {e}")
+        print(f"⚠️  Duration check error for {video_id} via pytubefix: {e}")
+
+    try:
+        ydl_opts = {
+            'quiet': True,
+            'skip_download': True,
+            'nocheckcertificate': True,
+            'ignoreerrors': True,
+        }
+        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+            info = ydl.extract_info(video_url, download=False)
+            return int(info.get('duration') or 0)
+    except Exception as e:
+        print(f"⚠️  Duration fallback error for {video_id} via yt_dlp: {e}")
         return 0
 
 async def download_video_async(video_id, progress_callback=None):
@@ -473,6 +489,26 @@ async def download_video_async(video_id, progress_callback=None):
                     pass
             except Exception:
                 pass
+
+    def yt_dlp_download():
+        ydl_opts = {
+            'format': 'bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best',
+            'outtmpl': output_file,
+            'merge_output_format': 'mp4',
+            'noplaylist': True,
+            'quiet': True,
+            'no_warnings': True,
+            'retries': 3,
+            'ignoreerrors': False,
+            'nocheckcertificate': True,
+        }
+        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+            info = ydl.extract_info(video_url, download=True)
+            title = info.get('title') or 'Unknown Title'
+            duration = info.get('duration') or 0
+            if not os.path.exists(output_file):
+                raise Exception("Video file download failed")
+            return title, output_file, duration
 
     def download_sync():
         try:
@@ -497,13 +533,17 @@ async def download_video_async(video_id, progress_callback=None):
 
             return title, final_path, duration
 
-        except Exception as e:
-            if os.path.exists(output_file):
-                try:
-                    os.remove(output_file)
-                except:
-                    pass
-            raise Exception(f"Download failed: {str(e)}")
+        except Exception as first_exception:
+            print(f"⚠️  pytubefix download failed for {video_url}: {first_exception}")
+            try:
+                return yt_dlp_download()
+            except Exception as fallback_exception:
+                if os.path.exists(output_file):
+                    try:
+                        os.remove(output_file)
+                    except:
+                        pass
+                raise Exception(f"Download failed: {first_exception}; fallback yt_dlp failed: {fallback_exception}")
 
     loop = asyncio.get_event_loop()
     return await loop.run_in_executor(thread_pool, download_sync)
@@ -1786,7 +1826,7 @@ def main():
 
         # Start queue worker and register bot commands on startup
         async def post_init(app):
-            asyncio.create_task(queue_worker(app))
+            app.create_task(queue_worker(app))
             if get_queue_size() > 0:
                 print(f"📋 Queue worker started — will process {get_queue_size()} pending items")
 
