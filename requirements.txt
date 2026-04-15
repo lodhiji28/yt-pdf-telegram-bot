@@ -1,0 +1,9 @@
+python-telegram-bot
+opencv-python-headless
+numpy
+Pillow
+fpdf
+yt-dlp
+pytubefix
+scikit-image
+openpyxl
